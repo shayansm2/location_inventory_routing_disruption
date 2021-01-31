@@ -26,6 +26,7 @@ def red_deer_algorithm(n_iter):
         pop.hind_selection()
         pop.roaring()
         pop.commander_selection()
+        pop.fighting()
         pop.form_harem()
         pop.inner_harem_mate()
         pop.outer_harem_mate()
