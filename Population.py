@@ -71,4 +71,86 @@ class Population (object):
     
 
     def form_harem(self):
-        pass
+        
+        v = [commander.fitness for commander in self.commanders]
+        V = max(v) - v
+        p = V / sum(V)
+
+        n_harem = np.round(self.n_hind * p).astype(int)
+        harem_index = np.concatenate((np.array([0]),n_harem)).cumsum()
+        random.shuffle(self.hinds)
+
+        for i in range(self.n_com):
+
+            harem = Harem(self.commanders[i], self.hinds[harem_index[i]:harem_index[i+1]], self.alpha, self.beta)
+            self.harems[self.commanders[i]] = harem
+
+
+    def inner_harem_mate(self):
+
+        for commander in self.commanders:
+
+            self.harems[commander].inner_harem_mate()
+    
+
+    def outer_harem_mate(self):
+
+        random.shuffle(self.commanders)
+        
+        for commander_index in range(-1, self.n_com - 1):
+
+            self.harems[self.commanders[commander_index]].outer_harem_mate(self.commanders[commander_index + 1])
+
+
+    def get_harem_childs(self):
+
+        for commander in self.commanders:
+
+            self.childs += self.harems[commander].return_childs()
+
+
+    def stag_mate(self):
+
+        for stag in self.stags:
+
+            best_hind = self.hinds[0]
+            min_distance = stag.distance(best_hind)
+
+            for hind_index in range(1, self.n_hind):
+
+                new_distance = stag.distance(self.hinds[hind_index])
+                if new_distance < min_distance:
+                    min_distance = new_distance
+                    best_hind = self.hinds[hind_index]
+            
+            child = stag.mating(best_hind)
+            self.childs.append(child)
+
+    
+    def new_generation(self):
+
+        all_population = self.commanders + self.stags + self.hinds + self.childs
+        self.commanders = []
+        self.stags = []
+        self.hinds = []
+        self.childs = []
+
+        tournament_selection_n = int((len(all_population) - self.n_pop) / 5)
+
+        for i in range(self.n_pop):
+
+            tournament = random.sample(all_population, tournament_selection_n)
+            tournament.sort(key = lambda x: x.fitness)
+            all_population.remove(tournament[0])
+            self.all_rds.append(tournament[0])
+    
+
+    def return_best_answer(self):
+
+        best_solution = "not found any feasible solution"
+        self.all_rds.sort(key = lambda x: x.fitness)
+        for rd in self.all_rds:
+            if rd.penalty_function() == 0 :
+                best_solution = rd
+                break
+        return best_solution
